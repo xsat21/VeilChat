@@ -1,5 +1,14 @@
 # Architecture decisions — pending approval
 
+**Current decision packet (2026-10-30):**
+
+- [ADR-001 — E2EE backend and protocol](ADR-001-E2EE-BACKEND.md) (**PROPOSED; Matrix vs Go + MLS not yet approved**).
+- [Browser identity and key lifecycle](../security/IDENTITY-KEY-LIFECYCLE.md).
+- [Integration proof and release test plan](../security/E2EE-INTEGRATION-TEST-PLAN.md).
+
+These documents provide gates for future PRs, not a production security approval. The synthetic UI/preview must remain non-messaging until an option is explicitly accepted and implemented with evidence.
+
+
 **Status:** PROPOSED — no production crypto or messaging architecture is approved.
 
 - Frontend: Vite + React + TypeScript, mobile-first PWA.
