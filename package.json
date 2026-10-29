@@ -7,7 +7,9 @@
     "dev": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 127.0.0.1",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "security:static-check": "node scripts/security-static-check.mjs",
+    "verify": "npm run check && npm run security:static-check && npm run build"
   },
   "engines": {
     "node": ">=22"
