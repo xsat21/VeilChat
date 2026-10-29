@@ -41,3 +41,42 @@ jobs:
           name: veilchat-static-build
           path: dist/
           retention-days: 3
+
+  docker-static-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build runtime image (fresh base layers)
+        run: docker build --pull --tag veilchat-web:ci .
+      - name: Start hardened image and verify NGINX
+        run: |
+          docker run -d --name veilchat-static-ci \
+            --read-only --tmpfs /tmp:rw,noexec,nosuid,size=32m \
+            --cap-drop ALL --security-opt no-new-privileges \
+            --pids-limit 100 --memory 256m \
+            -p 127.0.0.1:18080:8080 veilchat-web:ci
+          docker exec veilchat-static-ci nginx -t
+          for i in $(seq 1 40); do
+            if curl --silent --fail http://127.0.0.1:18080/healthz > /dev/null; then exit 0; fi
+            sleep 1
+          done
+          docker logs veilchat-static-ci
+          exit 1
+      - name: Test HTTP CSP, caching and protected routes
+        run: node scripts/deployment-http-test.mjs
+        env:
+          DEPLOY_URL: http://127.0.0.1:18080
+      - name: Inspect container runtime state
+        run: |
+          test "$(docker inspect -f '{{.Config.User}}' veilchat-static-ci)" != "root"
+          test "$(docker inspect -f '{{.HostConfig.ReadonlyRootfs}}' veilchat-static-ci)" = "true"
+          test "$(docker inspect -f '{{.HostConfig.Privileged}}' veilchat-static-ci)" = "false"
+      - name: Cleanup
+        if: always()
+        run: |
+          docker logs veilchat-static-ci || true
+          docker rm -f veilchat-static-ci || true

@@ -1,0 +1,20 @@
+# Local smoke use; Coolify Dockerfile deployment exposes internal port 8080.
+# localhost-only binding keeps the prototype off the public network.
+services:
+  veilchat-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: veilchat-web:local
+    ports:
+      - "127.0.0.1:8080:8080"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 100
+    mem_limit: 256m
+    restart: unless-stopped
