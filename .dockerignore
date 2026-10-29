@@ -1,0 +1,16 @@
+.git
+.github
+node_modules
+dist
+coverage
+docs
+scripts
+*.log
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.npmrc
+Dockerfile*
+docker-compose*
