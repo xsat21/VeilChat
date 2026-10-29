@@ -13,7 +13,7 @@
 
 ## CSP baseline
 
-The preview configuration currently allows only same-origin scripts/styles/fonts/connections, same-origin or data images, same-origin manifest, and self/blob workers. It blocks objects, framing, base URL changes, and form submission.
+The preview configuration currently allows only same-origin scripts/styles/fonts/connections, same-origin or data images and same-origin manifest. It **blocks workers entirely** until a reviewed service worker design exists. It also blocks objects, framing, base URL changes, and form submission.
 
 This is a **development preview policy**. Production security headers must be emitted by the real reverse proxy/static server and tested against the deployed origin. When Matrix or another remote API is selected, `connect-src` must be changed narrowly to the exact required endpoint(s); do not broaden it to `*`.
 
@@ -65,3 +65,18 @@ A PWA cannot guarantee confidentiality of visible plaintext when the browser, OS
 - No API or sensitive response enters Cache Storage.
 - No secret-bearing data enters local/session storage or logs.
 - Production `connect-src` is restricted to approved endpoints only.
+
+## Browser security smoke test (CI)
+
+Run `npm ci --ignore-scripts && npm run build && npm run security:browser-test` on a runner with Chrome/Chromium and Node 22.
+
+The test launches Vite `preview` on loopback and opens it in headless Chromium using the Chrome DevTools Protocol. It asserts:
+
+- HTML responses include baseline CSP, `X-Content-Type-Options`, and `Referrer-Policy` headers.
+- The prototype React page renders with CSP enabled.
+- Browser execution of injected inline `script`, `onerror`, and `javascript:` link probes is blocked by CSP.
+- A fresh browser profile has no registered service workers or Cache Storage, localStorage or sessionStorage entries.
+
+**Scope limitations:** This is a runtime smoke check of the **preview server**, not a security assessment of deployed Coolify/Nginx headers. It uses synthetic probes, not user chats or real crypto. It does not establish resistance to DOM-based XSS in future message rendering, malicious allowed same-origin scripts, extension/OS compromise, or server-origin substitution. The current test covers **Chromium only**; Firefox, iOS Safari, Android devices and production TLS are pending. Chrome's sandbox configuration in the runner is not being evaluated. No claim of E2EE readiness is implied.
+
+The test does not introduce a service worker or production identity/key storage. Any future change to `worker-src`, Trusted Types enforcement or WASM CSP permissions must be accompanied by a review and browser regression tests.
