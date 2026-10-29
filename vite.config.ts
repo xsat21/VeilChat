@@ -10,7 +10,7 @@ const previewHeaders = {
     "connect-src 'self'",
     "font-src 'self'",
     "manifest-src 'self'",
-    "worker-src 'self' blob:",
+    "worker-src 'none'",
     "base-uri 'none'",
     "object-src 'none'",
     "frame-ancestors 'none'",
