@@ -1,26 +1,23 @@
 # CI and dependency verification gate
 
-**Status: bootstrap CI only, NOT a security certification.**
+**Status:** Clean-install verification configured; not a security certification.
 
-The initial Vite/React scaffold was merged without a committed lockfile. This workflow is intentionally a temporary check using `npm install` because `npm ci` requires a lockfile. This is **not reproducible** and must be replaced before any deployment.
+The Vite/React scaffold originally shipped without a lockfile. A one-time GitHub Actions bootstrap on a feature branch generated `package-lock.json` and verified a clean `npm ci` build before committing it. The temporary contents-write workflow was removed before merge. The ongoing PWA workflow now uses `npm ci --ignore-scripts --no-audit --no-fund`.
 
-## Follow-up required before deployment
+## Review before merge
 
-1. Run `npm install --package-lock-only --ignore-scripts` using a trusted networked development environment.
-2. Review the generated `package-lock.json` for resolved packages, license compatibility and advisories; commit it in a separate reviewable change.
-3. Update CI from `npm install` to `npm ci --ignore-scripts` after confirming the build and required postinstall scripts, if any.
-4. Pin GitHub Actions by immutable commit hashes and review action dependencies.
-5. Add linting, tests, dependency audit and browser test suites as the application grows.
-6. Add PWA icons, installability tests, and service worker only after its security policy is reviewed.
-7. Do not put secrets in frontend build-time variables or the generated static site.
+- [x] Generate and commit `package-lock.json` on an isolated branch.
+- [x] Replace bootstrap `npm install` with `npm ci`.
+- [x] Remove the temporary contents-write bootstrap workflow.
+- [ ] Confirm final PR workflow run passed after changes.
+- [ ] Review dependencies, licenses, security advisories and package scripts.
+- [ ] Pin GitHub Actions to immutable commit SHA.
+- [ ] Add lint, tests, SBOM, vulnerability review and browser security tests.
+- [ ] Add icons and test installability on physical Android/iOS browsers when the app's service worker security policy is approved.
 
-## Gate results
+## Known limitations
 
-- [ ] GitHub Actions dependency resolution succeeds.
-- [ ] TypeScript check succeeds.
-- [ ] Production bundle succeeds.
-- [ ] `dist/index.html` exists.
-- [ ] A reviewed lockfile is committed and `npm ci` replaces bootstrap install.
-- [ ] Target browser tests pass, including mobile browsers.
-
-This CI checks code mechanics, not E2EE, XSS resilience, deployment TLS, or device compromise.
+- `--ignore-scripts` reduces install-time execution but may affect some future packages. Review any dependency requiring scripts explicitly.
+- `--no-audit` skips the built-in npm audit; this workflow is **not** dependency vulnerability scanning.
+- The workflow checks type correctness and build output, not E2EE, TLS, XSS safety, browser key management, or threat-model compliance.
+- No secrets should be included in Vite public build variables or the static output.
