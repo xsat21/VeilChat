@@ -21,10 +21,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      # Temporary bootstrap: no lockfile exists yet. Switch to npm ci
-      # after generating and reviewing the committed package-lock.json.
-      - name: Install dependencies (bootstrap only)
-        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Clean reproducible install
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Typecheck
         run: npm run check
       - name: Production build
