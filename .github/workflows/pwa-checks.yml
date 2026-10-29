@@ -25,6 +25,8 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Verify frontend security guard, types and production bundle
         run: npm run verify
+      - name: Verify CSP in real headless Chrome
+        run: npm run security:browser-test
       - name: Verify build entrypoint
         run: test -s dist/index.html
       - name: Verify no undeclared build secrets
