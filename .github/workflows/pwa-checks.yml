@@ -1,0 +1,45 @@
+name: PWA checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pwa-checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      # Temporary bootstrap: no lockfile exists yet. Switch to npm ci
+      # after generating and reviewing the committed package-lock.json.
+      - name: Install dependencies (bootstrap only)
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Typecheck
+        run: npm run check
+      - name: Production build
+        run: npm run build
+      - name: Verify build entrypoint
+        run: test -s dist/index.html
+      - name: Verify no undeclared build secrets
+        run: |
+          if grep -R -E '(-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----)' dist/; then
+            echo "::error::Possible private key material in build output"
+            exit 1
+          fi
+      - name: Upload build artifact (review only)
+        uses: actions/upload-artifact@v4
+        with:
+          name: veilchat-static-build
+          path: dist/
+          retention-days: 3
