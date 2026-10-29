@@ -140,6 +140,55 @@ try {
   assert.equal(state.local, 0);
   assert.equal(state.session, 0);
   console.log('PASS Browser: fresh prototype profile has no service worker or storage entries');
+  // Exercise the *application renderer* with bundled hostile-looking strings.
+  // This is distinct from the previous CSP checks, which deliberately inject
+  // elements into the DOM to verify that the browser blocks their execution.
+  await cdp.evaluate("document.querySelector('[data-testid=thread-xss-fixtures]').click()");
+  await retry(
+    async () => cdp.evaluate("document.querySelectorAll('[data-testid=message-body]').length === 5"),
+    'synthetic XSS fixture conversation',
+  );
+  const rendered = await cdp.evaluate(`(() => {
+    const nodes = [...document.querySelectorAll('[data-testid=message-body]')];
+    return {
+      texts: nodes.map((node) => node.textContent),
+      nonTextChildren: nodes.reduce((count, node) => count + node.children.length, 0),
+      executableMarkup: document.querySelectorAll('.message-list img, .message-list svg, .message-list script, .message-list iframe, .message-list a').length,
+      activeThread: document.querySelector('[data-testid=thread-xss-fixtures]')?.getAttribute('aria-pressed'),
+      composerDisabled: document.getElementById('preview-composer')?.disabled ?? false,
+      sendButtonDisabled: document.querySelector('.composer button')?.disabled ?? false,
+    };
+  })()`);
+  assert.deepEqual(rendered.texts, [
+    '<img src=x onerror=alert("xss")>',
+    '<script>alert("xss")</script>',
+    '<svg onload=alert("xss")></svg>',
+    'javascript:alert("xss") is text, not a clickable link.',
+    '<b>markup is not formatted</b> & links are not auto-generated.',
+  ], 'synthetic hostile-looking content must remain exact text');
+  assert.equal(rendered.nonTextChildren, 0, 'message bodies may contain text only');
+  assert.equal(rendered.executableMarkup, 0, 'message UI must not construct active markup');
+  assert.equal(rendered.activeThread, 'true');
+  assert.equal(rendered.composerDisabled, true);
+  assert.equal(rendered.sendButtonDisabled, true);
+  console.log('PASS Browser: synthetic HTML, SVG, JS URL and script fixtures rendered as inert text');
+
+  const postSelectionState = await cdp.evaluate(`(async () => ({
+    workers: (await navigator.serviceWorker.getRegistrations()).length,
+    caches: await caches.keys(),
+    local: localStorage.length,
+    session: sessionStorage.length,
+  }))()`);
+  assert.deepEqual(postSelectionState, { workers: 0, caches: [], local: 0, session: 0 });
+  console.log('PASS Browser: synthetic chat navigation does not persist messages or register workers');
+
+  await cdp.evaluate("document.querySelector('[data-testid=thread-sample-alpha]').click()");
+  await retry(
+    async () => cdp.evaluate("document.querySelectorAll('[data-testid=message-body]').length === 4"),
+    'return to sample conversation',
+  );
+  console.log('PASS Browser: switching synthetic conversations works');
+
   console.log('PASS: Chromium development-preview security smoke tests completed');
 } catch (error) {
   console.error(error);
