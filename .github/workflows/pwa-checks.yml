@@ -23,10 +23,8 @@ jobs:
           node-version: '22'
       - name: Clean reproducible install
         run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Typecheck
-        run: npm run check
-      - name: Production build
-        run: npm run build
+      - name: Verify frontend security guard, types and production bundle
+        run: npm run verify
       - name: Verify build entrypoint
         run: test -s dist/index.html
       - name: Verify no undeclared build secrets
